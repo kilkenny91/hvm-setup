@@ -1,0 +1,14 @@
+# HPE VM Essentials Software Image (ISO)
+#
+# Dateiname (empfohlen):
+#   hpe-vm-essentials.iso
+#
+# Original von HPE z.B.:
+#   HPE_VM_Essentials_SW_Image_8.0.x_S5Q83-xxxxx.iso
+#
+# Die ISO enthält KEINE OVA, sondern typischerweise:
+#   - hpe-vm_*.deb          → Console (auf jedem HVM-Host installieren)
+#   - hpe-vme-*.qcow2.gz    → Manager-VM (nur auf einem Host)
+#
+# PXE-Server (nach setup): /var/www/hvm-pxe/assets/installers/
+# HVM-Host (Script 4):     /root/installers/hpe-vm-essentials.iso

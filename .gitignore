@@ -1,0 +1,19 @@
+# Konfiguration (wird von setup-pxe-server.sh erzeugt)
+config/pxe-server.conf
+config/interfaces.yaml
+
+# ISO-Dateien
+iso/*.iso
+
+# Installer (ISO – zu groß für Git)
+installers/*.iso
+installers/*.deb
+installers/*.qcow2
+installers/**/*.qcow2
+installers/**/*.deb
+
+# Generierte Host-Konfigurationen
+hosts/
+
+# Backups
+*.bak.*

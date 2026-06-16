@@ -1,0 +1,91 @@
+#!ipxe
+# =============================================================================
+# HPE HVM iPXE Menü - Interaktive Parameterabfrage vor Installation
+# =============================================================================
+
+:start
+menu HPE HVM Hypervisor Installation
+item --gap --             === Installation ===
+item install               HVM installieren (interaktiv)
+item install-preset        HVM installieren (vorregistrierter Host)
+item --gap --             === Sonstiges ===
+item local                 Von lokaler Festplatte booten
+item shell                 iPXE Shell
+choose --default install --timeout 30000 target || goto local
+
+:install
+echo
+echo ==========================================
+echo   HPE HVM - Netzwerk-Konfiguration
+echo ==========================================
+echo
+
+:input_hostname
+echo -n Hostname: && read hostname
+iseq ${hostname} && goto input_hostname
+
+:input_ip
+echo -n IP-Adresse (Management): && read ip_address
+iseq ${ip_address} && goto input_ip
+
+:input_netmask
+echo -n Subnetzmaske [255.255.255.0]: && read netmask
+iseq ${netmask} && set netmask 255.255.255.0
+
+:input_gateway
+echo -n Gateway: && read gateway
+iseq ${gateway} && goto input_gateway
+
+:input_vlan
+echo -n VLAN-ID [1]: && read vlan_id
+iseq ${vlan_id} && set vlan_id 1
+
+:input_profile
+echo -n Interface-Profil [default]: && read profile
+iseq ${profile} && set profile default
+
+echo
+echo Zusammenfassung:
+echo   Hostname:  ${hostname}
+echo   IP:        ${ip_address}/${netmask}
+echo   Gateway:   ${gateway}
+echo   VLAN:      ${vlan_id}
+echo   Profil:    ${profile}
+echo
+echo -n Fortfahren? (y/n) [y]: && read confirm
+iseq ${confirm} n && goto start
+iseq ${confirm} N && goto start
+
+# Host auf PXE-Server vorbereiten (user-data generieren)
+echo Registriere Host auf PXE-Server...
+set prepare-url http://@PXE_SERVER_IP@/api/prepare-host?hostname=${hostname}&ip=${ip_address}&netmask=${netmask}&gateway=${gateway}&vlan=${vlan_id}&profile=${profile}
+imgfetch --name regdata ${prepare-url} || goto prepare_failed
+imgfree regdata
+echo Host registriert.
+goto boot_install
+
+:boot_install
+kernel @KERNEL_URL@ ip=dhcp url=http://@PXE_SERVER_IP@/iso/hpe-hvm.iso autoinstall ds=nocloud-net;s=http://@PXE_SERVER_IP@/hosts/${hostname}/ cloud-config-url=/dev/null
+initrd @INITRD_URL@
+boot
+
+:install-preset
+echo -n Hostname des vorregistrierten Hosts: && read hostname
+iseq ${hostname} && goto install-preset
+goto boot_install
+
+:prepare_failed
+echo
+echo FEHLER: Host konnte nicht auf PXE-Server registriert werden.
+echo Pruefen Sie die Erreichbarkeit von http://@PXE_SERVER_IP@/
+echo
+echo -n Trotzdem booten? (y/n): && read force
+iseq ${force} y && goto boot_install
+iseq ${force} Y && goto boot_install
+goto start
+
+:local
+exit
+
+:shell
+shell

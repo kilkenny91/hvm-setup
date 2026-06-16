@@ -1,0 +1,33 @@
+# PXE-Server Konfiguration
+# Wird von setup-pxe-server.sh erzeugt als config/pxe-server.conf
+
+# Netzwerk-Interface des PXE-Servers (z.B. eth0, ens33)
+PXE_INTERFACE="eth0"
+
+# IP-Adresse des PXE-Servers
+PXE_SERVER_IP="192.168.100.10"
+
+# DHCP-Bereich für PXE-Clients
+DHCP_RANGE_START="192.168.100.100"
+DHCP_RANGE_END="192.168.100.200"
+DHCP_SUBNET_MASK="255.255.255.0"
+DHCP_GATEWAY="192.168.100.1"
+DHCP_DNS="192.168.100.1"
+
+# Lease-Zeit (Format: dnsmasq, z.B. 12h, 1d)
+DHCP_LEASE_TIME="12h"
+
+# Pfade
+ISO_PATH="/opt/hvm-pxe/iso/hpe-hvm.iso"
+TFTP_ROOT="/var/lib/tftpboot"
+HTTP_ROOT="/var/www/hvm-pxe"
+INSTALL_ROOT="/opt/hvm-pxe"
+
+# Domain für Hostnames
+DOMAIN="local"
+
+# Bond-Modus für Management (active-backup, 802.3ad)
+MGMT_BOND_MODE="802.3ad"
+
+# iSCSI Initiator Prefix (IQN wird: iqn.YYYY-MM.com.hpe:${HOSTNAME})
+ISCSI_IQN_PREFIX="iqn.2024-01.com.hpe"

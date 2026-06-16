@@ -1,0 +1,5 @@
+#!ipxe
+# Direkter Boot ohne Menü (wird von menu.ipxe aufgerufen)
+kernel @KERNEL_URL@ ip=dhcp url=http://@PXE_SERVER_IP@/iso/hpe-hvm.iso autoinstall ds=nocloud-net;s=http://@PXE_SERVER_IP@/hosts/${hostname}/
+initrd @INITRD_URL@
+boot

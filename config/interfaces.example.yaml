@@ -1,0 +1,50 @@
+# Interface-Profile für HPE HVM Hosts
+# Kopieren nach config/interfaces.yaml und anpassen
+#
+# mgmt:       Interfaces für Management (werden zu bond0 gebündelt + VLAN)
+# vm_traffic: Interfaces für VM-Netzwerk (Referenz für spätere Konfiguration)
+# storage:    Interfaces für Storage/iSCSI (werden in Post-Install Script 1 konfiguriert)
+
+profiles:
+  default:
+    description: "Standard HPE ProLiant Dual-Port Setup"
+    mgmt:
+      - eno1
+      - eno2
+    vm_traffic:
+      - ens1f0
+      - ens1f1
+    storage:
+      - ens2f0
+      - ens2f1
+
+  dl360-gen10:
+    description: "HPE DL360 Gen10 - 4x 10Gb + 2x 1Gb onboard"
+    mgmt:
+      - eno1
+      - eno2
+    vm_traffic:
+      - ens1f0
+      - ens1f1
+    storage:
+      - ens2f0
+      - ens2f1
+
+  dl380-gen10:
+    description: "HPE DL380 Gen10"
+    mgmt:
+      - eno1
+      - eno2
+    vm_traffic:
+      - ens3f0
+      - ens3f1
+      - ens4f0
+      - ens4f1
+    storage:
+      - ens5f0
+      - ens5f1
+
+# Optionale Host-zu-Profil-Zuordnung (Hostname -> Profil)
+host_mapping:
+  hvm01: default
+  hvm02: dl360-gen10

@@ -1,0 +1,80 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: de_DE.UTF-8
+  keyboard:
+    layout: de
+  identity:
+    hostname: @HOSTNAME@
+    password: @ROOT_PASSWORD_HASH@
+    username: root
+  ssh:
+    install-server: true
+    allow-pw: true
+  packages:
+    - open-iscsi
+    - multipath-tools
+    - vlan
+    - bridge-utils
+    - ifenslave
+    - qemu-kvm
+    - libvirt-daemon-system
+    - libvirt-clients
+    - virtinst
+    - curl
+    - wget
+    - jq
+    - net-tools
+  storage:
+    layout:
+      name: direct
+      match:
+        path: /dev/sda
+  network:
+    version: 2
+    ethernets:
+      @MGMT_INTERFACES_NETPLAN@
+    bonds:
+      bond0:
+        interfaces: [@MGMT_BOND_INTERFACES@]
+        parameters:
+          mode: @MGMT_BOND_MODE@
+          lacp-rate: fast
+          mii-monitor-interval: 100
+          transmit-hash-policy: layer3+4
+    vlans:
+      bond0.@VLAN_ID@:
+        id: @VLAN_ID@
+        link: bond0
+        addresses:
+          - @IP_ADDRESS@/@CIDR@
+        routes:
+          - to: default
+            via: @GATEWAY@
+        nameservers:
+          addresses: [@DNS_SERVERS@]
+  late-commands:
+    - curtin in-target -- mkdir -p /root/post-install
+    - curtin in-target -- mkdir -p /root/config
+    - |
+      curtin in-target -- bash -c 'cat > /root/install-params.env << EOF
+      HOSTNAME=@HOSTNAME@
+      IP_ADDRESS=@IP_ADDRESS@
+      NETMASK=@NETMASK@
+      CIDR=@CIDR@
+      GATEWAY=@GATEWAY@
+      VLAN_ID=@VLAN_ID@
+      DNS_SERVERS=@DNS_SERVERS@
+      INTERFACE_PROFILE=@INTERFACE_PROFILE@
+      MGMT_INTERFACES=@MGMT_INTERFACES@
+      VM_TRAFFIC_INTERFACES=@VM_TRAFFIC_INTERFACES@
+      STORAGE_INTERFACES=@STORAGE_INTERFACES@
+      MGMT_BOND_MODE=@MGMT_BOND_MODE@
+      ISCSI_IQN_PREFIX=@ISCSI_IQN_PREFIX@
+      DOMAIN=@DOMAIN@
+      EOF'
+    - curtin in-target -- chmod 600 /root/install-params.env
+    @LATE_COMMANDS_COPY_SCRIPTS@
+  user-data:
+    disable_root: false
+  shutdown: reboot
