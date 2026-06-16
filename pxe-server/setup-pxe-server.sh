@@ -155,7 +155,9 @@ setup_directories() {
 
     # Projektdateien nach INSTALL_ROOT kopieren
     cp -r "${PROJECT_ROOT}/post-install" "$INSTALL_ROOT/"
-    cp -r "${PROJECT_ROOT}/post-install/"* "$HTTP_ROOT/assets/post-install/"
+    cp -r "${PROJECT_ROOT}/post-install/"* "$HTTP_ROOT/assets/post-install/" 2>/dev/null || true
+    [[ -d "${PROJECT_ROOT}/post-install/ops-vm" ]] && \
+        cp -a "${PROJECT_ROOT}/post-install/ops-vm" "$HTTP_ROOT/assets/post-install/"
     if compgen -G "${PROJECT_ROOT}/installers/*" >/dev/null 2>&1; then
         cp -r "${PROJECT_ROOT}/installers/"* "$HTTP_ROOT/assets/installers/" 2>/dev/null || true
         log_info "Installer nach ${HTTP_ROOT}/assets/installers/ kopiert"

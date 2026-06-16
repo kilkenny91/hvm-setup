@@ -137,6 +137,15 @@ if [[ -d "$POST_INSTALL_DIR" ]]; then
         LATE_COMMANDS_COPY_SCRIPTS+=$'\n    - curtin shell -- wget -qO /target/root/post-install/'"${basename_script}"' '"${HTTP_POST_INSTALL}/${basename_script}"
         LATE_COMMANDS_COPY_SCRIPTS+=$'\n    - curtin in-target -- chmod +x /root/post-install/'"${basename_script}"
     done
+    if [[ -d "$POST_INSTALL_DIR/ops-vm" ]]; then
+        LATE_COMMANDS_COPY_SCRIPTS+=$'\n    - curtin in-target -- mkdir -p /root/post-install/ops-vm'
+        while IFS= read -r -d '' rel; do
+            rel="${rel#${POST_INSTALL_DIR}/ops-vm/}"
+            dirpart=$(dirname "$rel")
+            [[ "$dirpart" == "." ]] || LATE_COMMANDS_COPY_SCRIPTS+=$'\n    - curtin in-target -- mkdir -p /root/post-install/ops-vm/'"${dirpart}"
+            LATE_COMMANDS_COPY_SCRIPTS+=$'\n    - curtin shell -- wget -qO /target/root/post-install/ops-vm/'"${rel}"' '"${HTTP_POST_INSTALL}/ops-vm/${rel}"
+        done < <(find "$POST_INSTALL_DIR/ops-vm" -type f -print0)
+    fi
 fi
 
 # Template ersetzen

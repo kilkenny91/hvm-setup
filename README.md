@@ -90,7 +90,9 @@ hvm-pxe-deploy/
     ├── 05-post-install-utils.sh
     ├── 06-install-ansible.sh
     ├── 07-setup-ssh-for-ansible.sh
-    └── 08-deploy-vme-console-deb.sh
+    ├── 08-deploy-vme-console-deb.sh
+    ├── 09-deploy-ops-vm.sh
+    └── ops-vm/                 # Docker Compose Stack (Syslog, Grafana, Prometheus)
 ```
 
 ## Dateien bereitstellen
@@ -144,6 +146,7 @@ cd /root/post-install
 ./06-install-ansible.sh
 ./07-setup-ssh-for-ansible.sh
 ./08-deploy-vme-console-deb.sh    # hpe-vm .deb auf allen Cluster-Hosts
+./09-deploy-ops-vm.sh             # Ops-VM: Syslog + Grafana + Prometheus
 ```
 
 ### Ansible (Script 6 + 7)
@@ -171,6 +174,42 @@ cd /root/post-install
 ```
 
 Das Skript installiert `hpe-vm_*.deb` lokal und auf Remote-Hosts (via Ansible-Inventory oder manuelle Eingabe). Empfohlene Reihenfolge: Script 4 → 6 → 7 → **8**.
+
+### Ops-VM: Syslog + Monitoring (Script 9)
+
+Erstellt eine KVM-VM im **gleichen Management-Netz** wie der Host (macvtap auf `bond0.<VLAN>`), mit höherer IP-Adresse (interaktiv, Vorschlag: Host-IP + 10).
+
+**Docker Compose Stack in der VM:**
+
+| Container | Funktion | Port |
+|-----------|----------|------|
+| syslog-ng | Zentraler Syslog-Server (persistentes Volume) | 514/tcp, 514/udp |
+| **Loki** | Log-Aggregation & Speicher (30 Tage Retention) | 3100 |
+| **Promtail** | Liest syslog-ng-Dateien → push an Loki | — |
+| Prometheus | Metriken | 9090 |
+| Grafana | Dashboards + **Log-Analyse** (Loki Datasource) | 3000 |
+| Alertmanager | Alert-Routing | 9093 |
+
+**Log-Pipeline:**
+
+```
+HVM-Hosts (rsyslog) → syslog-ng → Promtail → Loki → Grafana
+```
+
+Log-Analyse in Grafana unter **Ops → HVM Syslog Analyse** oder **Explore** mit LogQL, z.B. `{job="syslog"}`, `{job="syslog", host="hvm01"}`.
+
+**Metriken-Dashboard:** **Ops → HVM Host Metriken** — CPU, RAM, Disk, Netzwerk, Load, Uptime (Daten von `node_exporter` via Prometheus). Voraussetzung: `node_exporter` auf den HVM-Hosts (Script 9, Ansible-Playbook `install-node-exporter.yml`). Targets prüfen: `http://<ops-vm-ip>:9090/targets`.
+
+Script 9 konfiguriert **rsyslog-Forwarding** und **node_exporter** standardmäßig via **Ansible** auf allen Hosts im Inventory (`hosts: all` — inkl. localhost). Voraussetzung: Script 6 (Inventory) und Script 7 (SSH-Keys). Bei fehlendem Ansible/Inventory: Fallback per direktem SSH.
+
+Playbooks: `post-install/ops-vm/ansible/configure-rsyslog-forward.yml`, `install-node-exporter.yml`
+
+```bash
+cd /root/post-install
+./09-deploy-ops-vm.sh    # nach Script 7 (SSH-Keys empfohlen)
+```
+
+Konfiguration: `/root/config/ops-vm.env`
 
 ## Interface-Konfiguration
 

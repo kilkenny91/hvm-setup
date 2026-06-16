@@ -1,0 +1,38 @@
+---
+# rsyslog-Forwarding auf alle Inventory-Hosts (inkl. localhost)
+- name: Syslog-Forwarding zur Ops-VM konfigurieren
+  hosts: all
+  become: true
+
+  tasks:
+    - name: rsyslog installieren
+      ansible.builtin.apt:
+        name: rsyslog
+        state: present
+        update_cache: true
+
+    - name: Forwarding-Konfiguration deployen
+      ansible.builtin.copy:
+        dest: /etc/rsyslog.d/49-ops-forward.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Ops-VM Syslog Forwarding – Ansible
+          # Generiert von 09-deploy-ops-vm.sh
+          *.* @@{{ ops_syslog_server_ip }}:514
+      notify: rsyslog neu starten
+
+  handlers:
+    - name: rsyslog neu starten
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+      failed_when: false
+
+    - name: syslog neu starten (Fallback)
+      ansible.builtin.service:
+        name: syslog
+        state: restarted
+      failed_when: false
+      listen: rsyslog neu starten

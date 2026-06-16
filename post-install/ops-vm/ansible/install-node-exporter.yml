@@ -1,0 +1,24 @@
+---
+# prometheus-node-exporter auf allen Inventory-Hosts
+- name: Prometheus node_exporter installieren
+  hosts: all
+  become: true
+
+  tasks:
+    - name: node_exporter installieren
+      ansible.builtin.apt:
+        name: prometheus-node-exporter
+        state: present
+        update_cache: true
+
+    - name: node_exporter aktivieren und starten
+      ansible.builtin.service:
+        name: prometheus-node-exporter
+        enabled: true
+        state: started
+
+    - name: Port 9100 lauscht
+      ansible.builtin.wait_for:
+        port: 9100
+        timeout: 30
+      failed_when: false

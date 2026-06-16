@@ -20,6 +20,7 @@ SCRIPTS=(
     "06-install-ansible.sh"
     "07-setup-ssh-for-ansible.sh"
     "08-deploy-vme-console-deb.sh"
+    "09-deploy-ops-vm.sh"
 )
 
 echo ""
