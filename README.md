@@ -246,6 +246,49 @@ Der Setup-Assistent konfiguriert dnsmasq mit:
 | Autoinstall startet nicht | HTTP erreichbar? `curl http://<server>/hosts/<hostname>/user-data` |
 | ISO nicht gefunden | Pfad in `config/pxe-server.conf` prüfen, `extract-iso.sh` erneut ausführen |
 
+## Schema-Zeichnung Zielarchitektur
+
+![Schema-Zeichnung Zielarchitektur](HVM.png)
+
+Die Zeichnung zeigt den **Gesamtaufbau** aus Installation, Plattform-Schicht und physischem Netzwerk. Im Projekt mappt sich das wie folgt:
+
+### Bereitstellung (oben)
+
+- **Installer Device → PXE / DHCP → Host 1, Host 2, Host n**  
+  Der zentrale Installations-Server (dieses Projekt: `setup-pxe-server.sh`) bootet alle HVM-Hosts per Netzwerk, verteilt per DHCP/IPXE die Installationsparameter und spielt das Betriebssystem automatisiert ein.
+
+- **Setup Storage**  
+  Anbindung an externes Storage (iSCSI/Fibre Channel). Umgesetzt in den Post-Install-Skripten `01-configure-storage-interfaces.sh`, `02-configure-iscsi-iqn.sh` und `03-configure-multipath-iscsi.sh`.
+
+- **Set Firewall → FW**  
+  Optionale Firewall-Härtung auf den Hosts (`05-post-install-utils.sh`, UFW).
+
+### Plattform & Virtualisierung (Mitte)
+
+- **HPE Morpheus / Docker-Stack**  
+  HPE VM Essentials als Management-/Virtualisierungs-Plattform (`04-import-hpe-vm-essentials.sh`, `08-deploy-vme-console-deb.sh`) sowie der **Ops-VM Docker-Stack** (`09-deploy-ops-vm.sh`: Syslog, Loki, Prometheus, Grafana).
+
+- **VM1, VM2**  
+  Virtuelle Maschinen auf den HVM-Hosts — u.a. die VM-Essentials-Manager-VM und die Ops-/Monitoring-VM.
+
+- **Setup networks**  
+  Netzwerk-Konfiguration pro Host: Bonds, VLANs, Storage- und VM-Traffic-Interfaces (`00-configure-mgmt-network.sh`, `01-configure-storage-interfaces.sh`, `05-post-install-utils.sh`).
+
+- **Host 1 ILO / Host 2 ILO**  
+  Dedizierte Out-of-Band-Management-Ports der HPE-Server (Hardware-Management, unabhängig vom OS).
+
+### Physisches Netzwerk (unten)
+
+Ein **Host** ist redundant an **Switch 1** und **Switch 2** angebunden:
+
+| Farbe / Legende | Interface(s) | Traffic-Typ | Im Projekt |
+|-----------------|--------------|-------------|------------|
+| Grün — Mgmt/VM-Traffic (tagged) | ETH0, ETH2 | Management + VM-Netzwerk, getaggt | `mgmt` + `vm_traffic` in `config/interfaces.yaml`, Bond + VLAN in Script `00` |
+| Rot — Storage (untagged) | ETH1, ETH3 | Storage/iSCSI, untagged | `storage` in `config/interfaces.yaml`, Script `01` |
+| Blau — ILO (tagged) | ILO | Out-of-Band-Management | Separates Hardware-Management, nicht Teil der OS-Konfiguration |
+
+Jedes Dateninterface (ETH0–ETH3) ist **jeweils an beide Switches** verbunden — typisches redundantes Design mit Bonding und getrennten Netzwerkdomänen für Management, VM-Traffic und Storage.
+
 ## Lizenz
 
 MIT
